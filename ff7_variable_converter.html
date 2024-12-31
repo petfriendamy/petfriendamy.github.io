@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>FF7 Variable Converter</title>
+		<style>
+			<!--
+			body {
+				text-align: center;
+				background-color: #99a;
+				color: #334;
+				font-family: "Arial", sans-serif;
+			}
+			
+			#form {
+				text-align: center;
+				margin: auto;
+			}
+
+			#form th, #form td {
+				border: 1px #334 solid;
+				padding: 25px;
+				background-color: #aab;
+			}
+			
+			#scarlet { width: 75px; }
+
+			.makou { width: 50px; }
+		//-->
+		</style>
+
+		<script>
+		function getVariables(source) {
+			var saveMapStart = parseInt('DC08DC', 16);
+			var tempBank = parseInt('CC14D0', 16);
+			var bankCount = 5;
+
+			if (source == 1) { //makou
+				var bank = parseInt(document.getElementById('makou-bank').value);
+				var pos = parseInt(document.getElementById('makou-pos').value);
+				var result = "unknown";
+
+				if (bank == 5 || bank == 6) {
+					result = (tempBank + pos).toString(16).toUpperCase();
+				}
+				else if (bank > 7 && bank < 11) {
+					result = "invalid";
+				}
+				else {
+					var offset = bank;
+					if (bank == 7) {offset = bankCount - 1;}
+					else {
+						if (offset > 7) {offset -= 6;}
+						if (offset % 2 != 0) {offset++;}
+						offset = (offset / 2) - 1;
+					}
+
+					var result = (saveMapStart + (offset * 256) + pos).toString(16).toUpperCase();				
+				}
+				document.getElementById('memory-address').value = result;
+				if (bank > 2) {
+					document.getElementById('scarlet').value = "none";
+				}
+				else {
+					document.getElementById('scarlet').value = pos.toString(16).padStart(2,'0').toUpperCase();
+				}
+			}
+			
+			else if (source == 2) { //scarlet
+				var pos = parseInt(document.getElementById('scarlet').value, 16);
+				if (isNaN(pos)) {window.alert("Not a valid hex address.");}
+				else {
+					document.getElementById('makou-bank').value = 1;
+					document.getElementById('makou-pos').value = pos;
+					document.getElementById('memory-address').value = (saveMapStart + pos).toString(16).toUpperCase();
+				}
+			}
+			
+			else { //memory address
+				var value = parseInt(document.getElementById('memory-address').value, 16);
+				if (isNaN(value)) {window.alert("Not a valid hex address.");}
+				else if (value >= tempBank && value < tempBank + 256) {
+					document.getElementById('makou-bank').value = 5;
+					document.getElementById('makou-pos').value = (value - tempBank);
+				}
+				else if (value >= saveMapStart && value < saveMapStart + (256 * bankCount)) {
+					var pos = value - saveMapStart;
+					var offset = 1;
+					while (pos > 255) {
+						pos -= 256;
+						offset++;
+					}
+					var bank = (offset * 2) - 1;
+					if (offset == bankCount) {bank = 15;}
+					else if (offset > 2) {bank += 6;}
+					
+					document.getElementById('makou-bank').value = bank;
+					document.getElementById('makou-pos').value = pos;
+					
+					if (bank == 1) {
+						document.getElementById('scarlet').value = pos.toString(16).padStart(2,'0').toUpperCase();
+					}
+					else {
+						document.getElementById('scarlet').value = "none";
+					}
+				}
+				else {window.alert("Address is out of range.");}
+			}
+		}
+		</script>
+	</head>
+	<body>
+		<h1>FF7 Variable Converter</h1>
+		<table id="form">
+			<tr>
+				<th>Makou Reactor</th>
+				<td>Var <input id="makou-bank" class="makou" type="number" min=1 max=15> <input id="makou-pos" class="makou" type="number" min=0 max=255></td>
+				<td><input type="button" value="Calculate from this" onclick="getVariables(1);"></td>
+			</tr>
+			
+			<tr>
+				<th>Scarlet</th>
+				<td>GlobalVar: <input id="scarlet" maxLength=2></td>
+				<td><input type="button" value="Calculate from this" onclick="getVariables(2);"></td>
+			</tr>
+
+			<tr>
+				<th>Memory address</th>
+				<td><input id="memory-address" maxLength=6></td>
+				<td><input type="button" value="Calculate from this" onclick="getVariables(3);"></td>
+			</tr>
+		</table>
+	</body>
+</html>
