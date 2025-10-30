@@ -23,7 +23,7 @@
 				background-color: #aab;
 			}
 			
-			#scarlet { width: 75px; }
+			#scarlet, #landscaper { width: 75px; }
 
 			.makou { width: 50px; }
 		//-->
@@ -32,19 +32,24 @@
 		<script>
 		function getVariables(source) {
 			var saveMapStart = parseInt('DC08DC', 16);
+			var saveMapStartPSX = parseInt('9D288', 16);
+			var wmOffset = parseInt('BA4', 16); 
 			var tempBank = parseInt('CC14D0', 16);
 			var bankCount = 5;
 
 			if (source == 1) { //makou
 				var bank = parseInt(document.getElementById('makou-bank').value);
 				var pos = parseInt(document.getElementById('makou-pos').value);
-				var result = "unknown";
+				var addressPC = "unknown";
+				var addressPSX = "unknown";
+				var addressWM = "unknown";
 
 				if (bank == 5 || bank == 6) {
-					result = (tempBank + pos).toString(16).toUpperCase();
+					addressPC = (tempBank + pos).toString(16).toUpperCase();
 				}
 				else if (bank > 7 && bank < 11) {
-					result = "invalid";
+					addressPC = "invalid";
+					addressPSX = "invalid";
 				}
 				else {
 					var offset = bank;
@@ -55,9 +60,13 @@
 						offset = (offset / 2) - 1;
 					}
 
-					var result = (saveMapStart + (offset * 256) + pos).toString(16).toUpperCase();				
+					var addressPC = (saveMapStart + (offset * 256) + pos).toString(16).toUpperCase();
+					var addressPSX = (saveMapStartPSX + (offset * 256) + pos).toString(16).toUpperCase();
+					var addressWM = (wmOffset + (offset * 256) + pos).toString(16).toUpperCase();
 				}
-				document.getElementById('memory-address').value = result;
+				document.getElementById('memory-address-pc').value = addressPC;
+				document.getElementById('memory-address-psx').value = addressPSX;
+				document.getElementById('landscaper').value = addressWM;
 				if (bank > 2) {
 					document.getElementById('scarlet').value = "none";
 				}
@@ -72,19 +81,41 @@
 				else {
 					document.getElementById('makou-bank').value = 1;
 					document.getElementById('makou-pos').value = pos;
-					document.getElementById('memory-address').value = (saveMapStart + pos).toString(16).toUpperCase();
+					document.getElementById('memory-address-pc').value = (saveMapStart + pos).toString(16).toUpperCase();
+					document.getElementById('memory-address-psx').value = (saveMapStartPSX + pos).toString(16).toUpperCase();
+					document.getElementById('landscaper').value = (wmOffset + pos).toString(16).toUpperCase();
 				}
 			}
 			
 			else { //memory address
-				var value = parseInt(document.getElementById('memory-address').value, 16);
-				if (isNaN(value)) {window.alert("Not a valid hex address.");}
-				else if (value >= tempBank && value < tempBank + 256) {
-					document.getElementById('makou-bank').value = 5;
-					document.getElementById('makou-pos').value = (value - tempBank);
+				var value = parseInt(document.getElementById('memory-address-pc').value, 16);
+				var temp = tempBank;
+				var saveMap = saveMapStart;
+				
+				if (source == 3) { //landscaper
+					value = parseInt(document.getElementById('landscaper').value, 16);
+					saveMap = wmOffset;
 				}
-				else if (value >= saveMapStart && value < saveMapStart + (256 * bankCount)) {
-					var pos = value - saveMapStart;
+				if (source == 5) { //psx
+					value = parseInt(document.getElementById('memory-address-psx').value, 16);
+					//temp = tempBankPSX;
+					saveMap = saveMapStartPSX;
+				}
+				
+				if (isNaN(value)) {window.alert("Not a valid hex address.");}
+				
+				else if (value >= temp && value < temp + 256) {
+					document.getElementById('makou-bank').value = 5;
+					document.getElementById('makou-pos').value = (value - temp);
+				}
+				
+				else if (value >= saveMap && value < saveMap + (256 * bankCount)) {
+					var pos = value - saveMap;
+					
+					document.getElementById('memory-address-pc').value = (saveMapStart + pos).toString(16).toUpperCase();
+					document.getElementById('memory-address-psx').value = (saveMapStartPSX + pos).toString(16).toUpperCase();
+					document.getElementById('landscaper').value = (wmOffset + pos).toString(16).toUpperCase();
+					
 					var offset = 1;
 					while (pos > 255) {
 						pos -= 256;
@@ -104,6 +135,7 @@
 						document.getElementById('scarlet').value = "none";
 					}
 				}
+				
 				else {window.alert("Address is out of range.");}
 			}
 		}
@@ -125,9 +157,20 @@
 			</tr>
 
 			<tr>
-				<th>Memory address</th>
-				<td><input id="memory-address" maxLength=6></td>
+				<th>Landscaper</th>
+				<td>Savemap[<input id="landscaper" maxLength=3>]</td>
 				<td><input type="button" value="Calculate from this" onclick="getVariables(3);"></td>
+
+			<tr>
+				<th>Memory address (PC)</th>
+				<td><input id="memory-address-pc" maxLength=6></td>
+				<td><input type="button" value="Calculate from this" onclick="getVariables(4);"></td>
+			</tr>
+
+			<tr>
+				<th>Memory address (PSX)</th>
+				<td><input id="memory-address-psx" maxLength=6></td>
+				<td><input type="button" value="Calculate from this" onclick="getVariables(5);"></td>
 			</tr>
 		</table>
 	</body>
